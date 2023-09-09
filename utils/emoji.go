@@ -13,3 +13,13 @@ func IsEmoji(c rune) bool {
 		(c >= 0x238C && c <= 0x2454) || // Misc items
 		(c >= 0x20D0 && c <= 0x20FF) // Combining Diacritical Marks for Symbols
 }
+
+func ExtractEmojiCharacters(emoji string) []string {
+	var characters []string
+	for _, r := range emoji {
+		if IsEmoji(r) {
+			characters = append(characters, string(r))
+		}
+	}
+	return characters
+}

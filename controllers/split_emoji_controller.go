@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"41x3n.yama/emoji-splitter/models"
@@ -11,49 +12,53 @@ import (
 var errorLogger = utils.ErrorLogger
 var infoLogger = utils.InfoLogger
 
-func SplitEmoji(c *gin.Context) {
-	var payload models.EmojiPayload
+func SplitEmojiCommon(c *gin.Context, emoji string) (models.EmojiResponse, error) {
+	if emoji == "" {
+		return models.EmojiResponse{}, fmt.Errorf("invalid emoji received")
+	}
 
+	characters := utils.ExtractEmojiCharacters(emoji)
+	if len(characters) == 0 {
+		return models.EmojiResponse{}, fmt.Errorf("no emoji found in payload: %s", emoji)
+	}
+
+	response := models.EmojiResponse{
+		OriginalMessage: emoji,
+		SplitEmojiList:  characters,
+		Message:         "We have trimmed the payload to return only emoji characters",
+	}
+
+	infoLogger.Printf("Emoji Response: %+v", response)
+	return response, nil
+}
+
+func SplitEmojiPost(c *gin.Context) {
+	var payload models.EmojiPayload
 	if err := c.BindJSON(&payload); err != nil {
 		errorLogger.Printf("Error binding JSON: %s", err.Error())
 		c.JSON(http.StatusBadRequest, models.Error{Error: err.Error()})
 		return
 	}
 
-	emoji := payload.Emoji
-	infoLogger.Printf("Emoji Payload: %s", emoji)
-
-	if emoji == "" || len(emoji) == 0 {
-		errorMessage := "Invalid emoji received"
-		errorLogger.Printf("%s", errorMessage)
-
-		c.JSON(http.StatusBadRequest, models.Error{Error: errorMessage})
+	response, err := SplitEmojiCommon(c, payload.Emoji)
+	if err != nil {
+		errorLogger.Printf("%s", err.Error())
+		c.JSON(http.StatusBadRequest, models.Error{Error: err.Error()})
 		return
 	}
 
-	var characters []string
-	for _, r := range emoji {
-		infoLogger.Printf("%c -> %U\n", r, r)
-		if utils.IsEmoji(r) {
-			characters = append(characters, string(r))
-		}
-	}
+	c.JSON(http.StatusOK, response)
+}
 
-	if len(characters) == 0 {
-		errorMessage := "No emoji found in payload"
-		errorLogger.Printf("%s: %s", errorMessage, emoji)
+func SplitEmojiGet(c *gin.Context) {
+	emoji := c.Query("emoji")
 
-		c.JSON(http.StatusBadRequest, models.Error{Error: errorMessage})
+	response, err := SplitEmojiCommon(c, emoji)
+	if err != nil {
+		errorLogger.Printf("%s", err.Error())
+		c.JSON(http.StatusBadRequest, models.Error{Error: err.Error()})
 		return
 	}
 
-	EmojiResponse := models.EmojiResponse{
-		OriginalMessage: emoji,
-		SplitEmojiList:  characters,
-		Message:         "We have trimmed the payload to return only emoji characters",
-	}
-
-	infoLogger.Printf("Emoji Response: %+v", EmojiResponse)
-
-	c.JSON(http.StatusOK, EmojiResponse)
+	c.JSON(http.StatusOK, response)
 }

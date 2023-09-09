@@ -6,9 +6,10 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine) {
-	router.GET("/hello", controllers.Hello)
+	router.GET("/", controllers.Hello)
 
 	router.GET("/health", controllers.Health)
 
-	router.POST("/split-emoji", controllers.SplitEmoji)
+	router.GET("/split", controllers.SplitEmojiGet)
+	router.POST("/split", controllers.SplitEmojiPost)
 }
