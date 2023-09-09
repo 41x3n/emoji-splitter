@@ -21,7 +21,6 @@ func LoadConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
 		errorLogger.Fatalf("Error loading .env file: %v", err)
-		return nil, err
 	}
 
 	// Parse configuration values
